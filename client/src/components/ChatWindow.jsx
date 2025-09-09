@@ -2,9 +2,6 @@ import { Box, List } from "@mui/material";
 import MessageItem from "./MessageItem";
 
 export default function ChatWindow({ messages, currentUser }) {
-  
-  console.log(currentUser);
-  
   return (
     <Box
       sx={{
@@ -17,13 +14,25 @@ export default function ChatWindow({ messages, currentUser }) {
       }}
     >
       <List>
-        {messages.map((msg, idx) => (
-          <MessageItem
-            key={msg.ts || idx}
-            msg={msg}
-            currentUser={currentUser}
-          />
-        ))}
+        {messages.map((msg, idx) => {
+          // Ensure timestamp is valid
+          let timestamp = msg.ts;
+          if (!timestamp) timestamp = Date.now();
+          if (typeof timestamp === "string") timestamp = Number(timestamp);
+
+          const date = new Date(timestamp);
+          const formattedTime = isNaN(date.getTime())
+            ? ""
+            : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+          return (
+            <MessageItem
+              key={msg.ts || idx}
+              msg={{ ...msg, formattedTime }} // pass formatted time to MessageItem
+              currentUser={currentUser}
+            />
+          );
+        })}
       </List>
     </Box>
   );

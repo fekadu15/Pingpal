@@ -1,41 +1,75 @@
-import { useState, useEffect } from "react";
-import {
-  Modal,
-  Box,
-  Typography,
-  TextField,
-  IconButton,
-  List,
-  ListItem,
-  ListItemText
-} from "@mui/material";
-import SendIcon from "@mui/icons-material/Send";
+import { useState, useEffect, useRef } from "react";
+import { Modal, Box, Typography, IconButton, Paper, Divider } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import ChatWindow from "./ChatWindow";
+import MessageInput from "./MessageInput";
+import axios from "axios";
 import socket from "../socket";
 
-export default function PrivateChatModal({ open, onClose, username, currentUser }) {
+export default function PrivateChatModal({
+  open,
+  onClose,
+  username,     
+  currentUser,  
+}) {
   const [messages, setMessages] = useState([]);
-  const [text, setText] = useState("");
+  const scrollRef = useRef();
 
+  // Fetch private message history
   useEffect(() => {
-    if (!open) return;
+    if (!open || !username || !currentUser) return;
 
-    const handlePrivate = (msg) => {
+    const fetchHistory = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:5000/private-messages/${currentUser.username}/${username}`
+        );
+        setMessages(res.data || []);
+      } catch (err) {
+        console.error("Failed to fetch private messages:", err);
+      }
+    };
+
+    fetchHistory();
+  }, [open, username, currentUser]);
+
+  // Listen for incoming private messages
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const handleIncoming = (msg) => {
       if (
-        (msg.from === currentUser.username && msg.to === username) ||
-        (msg.from === username && msg.to === currentUser.username)
+        (msg.from === username && msg.to === currentUser.username) ||
+        (msg.from === currentUser.username && msg.to === username)
       ) {
         setMessages((prev) => [...prev, msg]);
       }
     };
 
-    socket.on("private message", handlePrivate);
-    return () => socket.off("private message", handlePrivate);
-  }, [open, username, currentUser.username]);
+    socket.on("private message", handleIncoming);
+    return () => socket.off("private message", handleIncoming);
+  }, [username, currentUser]);
 
-  const sendMessage = () => {
+  // Auto-scroll
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSend = (text) => {
     if (!text.trim()) return;
-    socket.emit("private message", { toUsername: username, text });
-    setText("");
+
+    const payload = {
+      from: currentUser.username,
+      to: username,
+      text,
+      ts: Date.now(),
+      type: "private",
+    };
+
+    socket.emit("private message", payload);
+    
   };
 
   return (
@@ -47,39 +81,43 @@ export default function PrivateChatModal({ open, onClose, username, currentUser 
           left: "50%",
           transform: "translate(-50%, -50%)",
           width: 400,
+          maxHeight: "80vh",
           bgcolor: "background.paper",
-          p: 2,
-          borderRadius: 2
+          boxShadow: 24,
+          borderRadius: 2,
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <Typography variant="h6" gutterBottom>
-          Chat with {username}
-        </Typography>
-        <List sx={{ maxHeight: 300, overflowY: "auto", mb: 1 }}>
-          {messages.map((msg, idx) => (
-            <ListItem key={idx}>
-              <ListItemText
-                primary={
-                  msg.system
-                    ? msg.text
-                    : `${msg.from === currentUser.username ? "You" : msg.from}: ${msg.text}`
-                }
-              />
-            </ListItem>
-          ))}
-        </List>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Type a message..."
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-          />
-          <IconButton color="primary" onClick={sendMessage}>
-            <SendIcon />
+        {/* Header */}
+        <Paper
+          sx={{
+            p: 1,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderTopLeftRadius: 8,
+            borderTopRightRadius: 8,
+          }}
+        >
+          <Typography variant="subtitle1">{username}</Typography>
+          <IconButton size="small" onClick={onClose}>
+            <CloseIcon />
           </IconButton>
+        </Paper>
+
+        <Divider />
+
+        {/* Chat Window */}
+        <Box ref={scrollRef} sx={{ flexGrow: 1, overflowY: "auto", p: 1 }}>
+          <ChatWindow messages={messages} currentUser={currentUser} />
+        </Box>
+
+        <Divider />
+
+        {/* Message Input */}
+        <Box sx={{ p: 1 }}>
+          <MessageInput user={currentUser} onSend={handleSend} type="private" />
         </Box>
       </Box>
     </Modal>

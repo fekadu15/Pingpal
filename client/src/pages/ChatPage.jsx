@@ -7,7 +7,7 @@ import MessageInput from "../components/MessageInput";
 import PrivateChatModal from "../components/PrivateChatModal";
 
 export default function ChatPage({ user }) {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([]); // room messages only
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
   const [privateChatUser, setPrivateChatUser] = useState(null);
@@ -19,49 +19,39 @@ export default function ChatPage({ user }) {
       return;
     }
 
-    const handleMessage = (msg) => {
-      setMessages((prev) => [...prev, msg]);
+    // Room messages
+    const handleRoomMessage = (msg) => {
+      setMessages((prev) => [...prev, { ...msg, type: "room" }]);
     };
-    socket.on("chat message", handleMessage);
+    socket.on("chat message", handleRoomMessage);
 
+    // Room message history
     const handleHistory = (history) => {
-      setMessages(history);
+      const roomMessages = history.map((m) => ({ ...m, type: "room" }));
+      setMessages(roomMessages);
     };
     socket.on("history", handleHistory);
 
-  
+    // Online users
     const handleUsers = (users) => setOnlineUsers(users);
     socket.on("room users", handleUsers);
 
-    
-    const handleTyping = ({ username, isTyping }) => {
+    // Typing indicator
+    const handleTyping = ({ username: u, isTyping }) => {
       setTypingUsers((prev) => {
-        
-        if (username === user.username) return prev;
-
-        if (isTyping && !prev.includes(username)) {
-          return [...prev, username];
-        }
-        if (!isTyping) {
-          return prev.filter((u) => u !== username);
-        }
+        if (u === user.username) return prev;
+        if (isTyping && !prev.includes(u)) return [...prev, u];
+        if (!isTyping) return prev.filter((name) => name !== u);
         return prev;
       });
     };
     socket.on("typing", handleTyping);
 
-  
-    const handlePrivateMessage = (msg) => {
-      console.log("PM received:", msg);
-    };
-    socket.on("private message", handlePrivateMessage);
-
     return () => {
-      socket.off("chat message", handleMessage);
+      socket.off("chat message", handleRoomMessage);
       socket.off("history", handleHistory);
       socket.off("room users", handleUsers);
       socket.off("typing", handleTyping);
-      socket.off("private message", handlePrivateMessage);
     };
   }, [user, navigate]);
 
@@ -78,8 +68,7 @@ export default function ChatPage({ user }) {
     <Container maxWidth="md" sx={{ mt: 5 }}>
       <Paper sx={{ p: 2 }}>
         <Typography variant="h6" gutterBottom>
-          You’re in Room: <strong>{user.room}</strong> as{" "}
-          <strong>{user.username}</strong>
+          You’re in Room: <strong>{user.room}</strong> as <strong>{user.username}</strong>
         </Typography>
 
         <Box sx={{ mb: 1 }}>
@@ -98,16 +87,20 @@ export default function ChatPage({ user }) {
 
           {typingUsers.length > 0 && (
             <Typography variant="body2" color="text.secondary">
-              {typingUsers.join(", ")}{" "}
-              {typingUsers.length > 1 ? "are" : "is"} typing...
+              {typingUsers.join(", ")} {typingUsers.length > 1 ? "are" : "is"} typing...
             </Typography>
           )}
         </Box>
 
+        {/* Room chat */}
         <ChatWindow messages={messages} currentUser={user} />
+        <MessageInput
+          user={user}
+          onSend={(msg) => socket.emit("chat message", msg)}
+          type="room"
+        />
 
-        <MessageInput user={user} />
-
+       
         {privateChatUser && (
           <PrivateChatModal
             open={!!privateChatUser}
