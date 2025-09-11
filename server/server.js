@@ -121,13 +121,13 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Private message
+ 
   socket.on("private message", async ({ to, text }) => {
     const from = socket.data.username;
     if (!from || !to || !text) return;
 
     const payload = { from, to, text, ts: Date.now() };
-
+    console.log(payload);
     try {
       await pool.query(
         `INSERT INTO private_messages (sender, receiver, text, ts)
@@ -138,14 +138,14 @@ io.on("connection", (socket) => {
       console.error("Private message insert error:", err);
     }
 
-    // Emit to receiver
+
     for (let [id, s] of io.of("/").sockets) {
       if (s.data.username === to) {
         s.emit("private message", payload);
       }
     }
 
-    // Emit to sender
+    
     socket.emit("private message", payload);
   });
 
@@ -166,14 +166,14 @@ io.on("connection", (socket) => {
   });
 });
 
-// --- Upload endpoint ---
+
 app.post("/upload", upload.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
   const filePath = `/uploads/${req.file.filename}`;
   res.json({ filePath });
 });
 
-// --- Fetch private messages ---
+
 app.get("/private-messages/:user1/:user2", async (req, res) => {
   const { user1, user2 } = req.params;
   try {
