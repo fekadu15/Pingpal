@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
-import { Modal, Box, Typography, IconButton, Paper, Divider } from "@mui/material";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Modal, Box, Typography, IconButton, Paper, Divider, createTheme, ThemeProvider, CssBaseline } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import { Brightness4, Brightness7 } from "@mui/icons-material";
 import ChatWindow from "./ChatWindow";
 import MessageInput from "./MessageInput";
 import axios from "axios";
@@ -9,11 +10,22 @@ import socket from "../socket";
 export default function PrivateChatModal({
   open,
   onClose,
-  username,     
-  currentUser,  
+  username,
+  currentUser,
 }) {
   const [messages, setMessages] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
   const scrollRef = useRef();
+
+  const theme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode: darkMode ? "dark" : "light",
+        },
+      }),
+    [darkMode]
+  );
 
   // Fetch private message history
   useEffect(() => {
@@ -69,57 +81,70 @@ export default function PrivateChatModal({
     };
 
     socket.emit("private message", payload);
-    
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: 400,
-          maxHeight: "80vh",
-          bgcolor: "background.paper",
-          boxShadow: 24,
-          borderRadius: 2,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* Header */}
-        <Paper
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Modal open={open} onClose={onClose}>
+        <Box
           sx={{
-            p: 1,
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 400,
+            maxHeight: "80vh",
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            borderRadius: 2,
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            borderTopLeftRadius: 8,
-            borderTopRightRadius: 8,
+            flexDirection: "column",
           }}
         >
-          <Typography variant="subtitle1">{username}</Typography>
-          <IconButton size="small" onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
-        </Paper>
+          {/* Header */}
+          <Paper
+            sx={{
+              p: 1,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              borderTopLeftRadius: 8,
+              borderTopRightRadius: 8,
+            }}
+          >
+            <Typography variant="subtitle1">{username}</Typography>
 
-        <Divider />
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <IconButton size="small" onClick={() => setDarkMode(!darkMode)}>
+                {darkMode ? <Brightness7 /> : <Brightness4 />}
+              </IconButton>
 
-        {/* Chat Window */}
-        <Box ref={scrollRef} sx={{ flexGrow: 1, overflowY: "auto", p: 1 }}>
-          <ChatWindow messages={messages} currentUser={currentUser} />
+              <IconButton size="small" onClick={onClose}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </Paper>
+
+          <Divider />
+
+          {/* Chat Window */}
+          <Box ref={scrollRef} sx={{ flexGrow: 1, overflowY: "auto", p: 1 }}>
+            <ChatWindow messages={messages} currentUser={currentUser} />
+          </Box>
+
+          <Divider />
+
+          {/* Message Input */}
+          <Box sx={{ p: 1 }}>
+            <MessageInput
+              user={currentUser}
+              onSend={handleSend}
+              type="private"
+            />
+          </Box>
         </Box>
-
-        <Divider />
-
-        {/* Message Input */}
-        <Box sx={{ p: 1 }}>
-          <MessageInput user={currentUser} onSend={handleSend} type="private" />
-        </Box>
-      </Box>
-    </Modal>
+      </Modal>
+    </ThemeProvider>
   );
 }
