@@ -13,7 +13,7 @@ export default function ChatPage({ user }) {
   const [typingUsers, setTypingUsers] = useState([]);
   const [privateChatUser, setPrivateChatUser] = useState(null);
 
-  // unread private messages: { username: count }
+
   const [unreadPMs, setUnreadPMs] = useState({});
 
   const navigate = useNavigate();
@@ -85,7 +85,7 @@ export default function ChatPage({ user }) {
   const openPrivateChat = (username) => {
     if (username === user.username) return;
 
-    // Clear unread counter for this username
+ 
     setUnreadPMs((prev) => {
       if (!prev || !prev[username]) return prev;
       const copy = { ...prev };
@@ -129,10 +129,36 @@ export default function ChatPage({ user }) {
           </Typography>
 
           {typingUsers.length > 0 && (
-            <Typography variant="body2" color="text.secondary">
-              {typingUsers.join(", ")} {typingUsers.length > 1 ? "are" : "is"} typing...
-            </Typography>
-          )}
+  <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
+    <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+      {typingUsers.join(", ")} {typingUsers.length > 1 ? "are" : "is"} typing
+    </Typography>
+    <Box sx={{ display: "flex", gap: 0.5 }}>
+      {[0, 1, 2].map((i) => (
+        <Box
+          key={i}
+          sx={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            bgcolor: "text.secondary",
+            animation: "bounce 1.4s infinite",
+            animationDelay: `${i * 0.2}s`,
+          }}
+        />
+      ))}
+    </Box>
+    <style>
+      {`
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0); }
+          40% { transform: scale(1); }
+        }
+      `}
+    </style>
+  </Box>
+)}
+
         </Box>
 
        

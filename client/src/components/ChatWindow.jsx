@@ -15,7 +15,7 @@ export default function ChatWindow({ messages, currentUser }) {
     >
       <List>
         {messages.map((msg, idx) => {
-          // Ensure timestamp is valid
+          
           let timestamp = msg.ts;
           if (!timestamp) timestamp = Date.now();
           if (typeof timestamp === "string") timestamp = Number(timestamp);
