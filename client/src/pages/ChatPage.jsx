@@ -1,7 +1,18 @@
 // ChatPage.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Typography, Paper, Box, Badge } from "@mui/material";
+import {
+  Container,
+  Typography,
+  Paper,
+  Box,
+  Badge,
+  Avatar,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+} from "@mui/material";
 import socket from "../socket";
 import ChatWindow from "../components/ChatWindow";
 import MessageInput from "../components/MessageInput";
@@ -12,8 +23,6 @@ export default function ChatPage({ user }) {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
   const [privateChatUser, setPrivateChatUser] = useState(null);
-
-
   const [unreadPMs, setUnreadPMs] = useState({});
 
   const navigate = useNavigate();
@@ -61,15 +70,13 @@ export default function ChatPage({ user }) {
   }, [user, navigate]);
 
   // Listen for private messages globally and increment unread counts.
-  // If the modal for the sender is currently open, don't increment.
   useEffect(() => {
     if (!user) return;
 
     const handlePrivateForBadge = (msg) => {
-      // msg: { from, to, text, ts } (as emitted by server)
       if (msg.to !== user.username) return; // not for me
       if (msg.from === user.username) return; // I sent it, ignore
-      if (privateChatUser === msg.from) return; // chat with sender is open -> don't count
+      if (privateChatUser === msg.from) return; // chat open -> don't count
 
       setUnreadPMs((prev) => ({
         ...prev,
@@ -85,7 +92,6 @@ export default function ChatPage({ user }) {
   const openPrivateChat = (username) => {
     if (username === user.username) return;
 
- 
     setUnreadPMs((prev) => {
       if (!prev || !prev[username]) return prev;
       const copy = { ...prev };
@@ -107,61 +113,91 @@ export default function ChatPage({ user }) {
           You’re in Room: <strong>{user.room}</strong> as{" "}
           <strong>{user.username}</strong>
         </Typography>
+<Box sx={{ mb: 2 }}>
 
-        <Box sx={{ mb: 1 }}>
-          <Typography variant="subtitle2">
-            Online:{" "}
-            {onlineUsers.map((u) => (
-              <span
-                key={u}
-                style={{ cursor: "pointer", marginRight: 8, display: "inline-flex", alignItems: "center" }}
-                onClick={() => openPrivateChat(u)}
-              >
-                <Badge
-                  color="error"
-                  badgeContent={unreadPMs[u] || 0}
-                  invisible={!unreadPMs[u]}
-                >
-                  <span style={{ color: "blue" }}>{u}</span>
-                </Badge>
-              </span>
-            ))}
-          </Typography>
-
-          {typingUsers.length > 0 && (
-  <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-    <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-      {typingUsers.join(", ")} {typingUsers.length > 1 ? "are" : "is"} typing
-    </Typography>
-    <Box sx={{ display: "flex", gap: 0.5 }}>
-      {[0, 1, 2].map((i) => (
-        <Box
-          key={i}
+  <Box sx={{ display: "flex", gap: 1, overflowX: "auto", py: 1 }}>
+    {onlineUsers.map((u) => (
+      <Box
+        key={u}
+        sx={{
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 1, // horizontal space between avatar and username
+          minWidth: 100,
+        }}
+        onClick={() => openPrivateChat(u)}
+      >
+        <Badge
+          overlap="circular"
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          variant="dot"
           sx={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            bgcolor: "text.secondary",
-            animation: "bounce 1.4s infinite",
-            animationDelay: `${i * 0.2}s`,
+            "& .MuiBadge-badge": {
+              backgroundColor: "green",
+              color: "green",
+              boxShadow: `0 0 0 2px white`,
+              borderRadius: "50%",
+              height: "10px",
+              minWidth: "10px",
+            },
           }}
-        />
-      ))}
-    </Box>
-    <style>
-      {`
-        @keyframes bounce {
-          0%, 80%, 100% { transform: scale(0); }
-          40% { transform: scale(1); }
-        }
-      `}
-    </style>
+        >
+          <Avatar sx={{ bgcolor: "#1976d2" }}>
+            {u[0].toUpperCase()}
+          </Avatar>
+        </Badge>
+
+        <Badge
+  color="error"
+  badgeContent={unreadPMs[u] || 0}
+  invisible={!unreadPMs[u]}
+>
+  <Typography sx={{ color: "blue", fontSize: 12, mt: 1 }}>
+    {u}
+  </Typography>
+</Badge>
+
+      </Box>
+    ))}
   </Box>
-)}
+</Box>
 
-        </Box>
 
-       
+        {/* Typing Indicator */}
+        {typingUsers.length > 0 && (
+          <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+              {typingUsers.join(", ")}{" "}
+              {typingUsers.length > 1 ? "are" : "is"} typing
+            </Typography>
+            <Box sx={{ display: "flex", gap: 0.5 }}>
+              {[0, 1, 2].map((i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    bgcolor: "text.secondary",
+                    animation: "bounce 1.4s infinite",
+                    animationDelay: `${i * 0.2}s`,
+                  }}
+                />
+              ))}
+            </Box>
+            <style>
+              {`
+                @keyframes bounce {
+                  0%, 80%, 100% { transform: scale(0); }
+                  40% { transform: scale(1); }
+                }
+              `}
+            </style>
+          </Box>
+        )}
+
+        {/* Room Chat */}
         <ChatWindow messages={messages} currentUser={user} />
         <MessageInput
           user={user}

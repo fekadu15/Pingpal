@@ -31,8 +31,8 @@ export default function JoinPage({ setUser }) {
   return (
     <Container maxWidth="sm" sx={{ mt: 10 }}>
       <Paper sx={{ p: 4, textAlign: "center" }}>
-        <Typography variant="h4" gutterBottom>
-          Join PingPal 🚀
+        <Typography variant="h4" bgcolor="gray" p={2} gutterBottom>
+          Join PingPal 
         </Typography>
 
         <TextField
