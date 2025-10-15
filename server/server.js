@@ -1,4 +1,4 @@
-// server.js
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -13,7 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// --- Setup uploads directory ---
+
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
@@ -26,10 +26,8 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Serve static files
 app.use("/uploads", express.static(uploadDir));
 
-// --- Database ---
 const pool = new Pool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
